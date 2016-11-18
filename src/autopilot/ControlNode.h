@@ -38,118 +38,128 @@
 #include "tum_ardrone/SetStayTime.h"
 #include "std_srvs/Empty.h"
 
+#include <actionlib/server/simple_action_server.h>  // LINNEA
+#include <drone/DoCommandAction.h>           // LINNEA
+
+
 class DroneKalmanFilter;
 class MapView;
 class PTAMWrapper;
 class KIProcedure;
 
+typedef actionlib::SimpleActionServer<drone::DoCommandAction> Server; // LINNEA
+
 
 struct ControlNode
 {
 private:
-	ros::Subscriber dronepose_sub;
-	ros::Publisher vel_pub;
-	ros::Subscriber tum_ardrone_sub;
-	ros::Publisher tum_ardrone_pub;
-	ros::Publisher takeoff_pub;
-	ros::Publisher land_pub;
-	ros::Publisher toggleState_pub;
+    ros::Subscriber dronepose_sub;
+    ros::Publisher vel_pub;
+    ros::Subscriber tum_ardrone_sub;
+    ros::Publisher tum_ardrone_pub;
+    ros::Publisher takeoff_pub;
+    ros::Publisher land_pub;
+    ros::Publisher toggleState_pub;
 
-	ros::NodeHandle nh_;
-	static pthread_mutex_t tum_ardrone_CS;
 
-	// parameters
-	int minPublishFreq;
-	std::string control_channel;
-	std::string dronepose_channel;
-	std::string command_channel;
-	std::string packagePath;
-	std::string land_channel;
-	std::string takeoff_channel;
-	std::string toggleState_channel;
+    ros::NodeHandle nh_;
+    static pthread_mutex_t tum_ardrone_CS;
+    Server drone_command_; //LINNEA
+    void execute(const drone::DoCommandGoalConstPtr& goal); // LINNEA
+    bool cmd_success; // unique for every new command being called.
 
-	// services
-	ros::ServiceServer setReference_;
-	ros::ServiceServer setMaxControl_;
-	ros::ServiceServer setInitialReachDistance_;
-	ros::ServiceServer setStayWithinDistance_;
-	ros::ServiceServer setStayTime_;
-	ros::ServiceServer startControl_;
-	ros::ServiceServer stopControl_;
-	ros::ServiceServer clearCommands_;
-	ros::ServiceServer hover_;
-	ros::ServiceServer lockScaleFP_;
+    // parameters
+    int minPublishFreq;
+    std::string control_channel;
+    std::string dronepose_channel;
+    std::string command_channel;
+    std::string packagePath;
+    std::string land_channel;
+    std::string takeoff_channel;
+    std::string toggleState_channel;
 
-	bool setReference(tum_ardrone::SetReference::Request&, tum_ardrone::SetReference::Response&);
-	bool setMaxControl(tum_ardrone::SetMaxControl::Request&, tum_ardrone::SetMaxControl::Response&);
-	bool setInitialReachDistance(tum_ardrone::SetInitialReachDistance::Request&, tum_ardrone::SetInitialReachDistance::Response&);
-	bool setStayWithinDistance(tum_ardrone::SetStayWithinDistance::Request&, tum_ardrone::SetStayWithinDistance::Response&);
-	bool setStayTime(tum_ardrone::SetStayTime::Request&, tum_ardrone::SetStayTime::Response&);
-	bool start(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
-	bool stop(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
-	bool clear(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
-	bool hover(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
-	bool lockScaleFP(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
+    // services
+    ros::ServiceServer setReference_;
+    ros::ServiceServer setMaxControl_;
+    ros::ServiceServer setInitialReachDistance_;
+    ros::ServiceServer setStayWithinDistance_;
+    ros::ServiceServer setStayTime_;
+    ros::ServiceServer startControl_;
+    ros::ServiceServer stopControl_;
+    ros::ServiceServer clearCommands_;
+    ros::ServiceServer hover_;
+    ros::ServiceServer lockScaleFP_;
 
-	// command queue & KI stuff
-	std::deque<std::string> commandQueue;
-	static pthread_mutex_t commandQueue_CS;
-	// this KI is currently responsible for setting the target etc.
-	// if it is "Done", it is set to NULL,
-	// if it is NULL, the next command will be popped and parsed from commandQueueu.
-	KIProcedure* currentKI;
+    bool setReference(tum_ardrone::SetReference::Request&, tum_ardrone::SetReference::Response&);
+    bool setMaxControl(tum_ardrone::SetMaxControl::Request&, tum_ardrone::SetMaxControl::Response&);
+    bool setInitialReachDistance(tum_ardrone::SetInitialReachDistance::Request&, tum_ardrone::SetInitialReachDistance::Response&);
+    bool setStayWithinDistance(tum_ardrone::SetStayWithinDistance::Request&, tum_ardrone::SetStayWithinDistance::Response&);
+    bool setStayTime(tum_ardrone::SetStayTime::Request&, tum_ardrone::SetStayTime::Response&);
+    bool start(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
+    bool stop(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
+    bool clear(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
+    bool hover(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
+    bool lockScaleFP(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
 
-	// command parameters
-	DronePosition parameter_referenceZero;
-	double parameter_StayTime;
-	double parameter_MaxControl;
-	double parameter_InitialReachDist;
-	double parameter_StayWithinDist;
+    // command queue & KI stuff
+    std::deque<std::string> commandQueue;
+    static pthread_mutex_t commandQueue_CS;
+    // this KI is currently responsible for setting the target etc.
+    // if it is "Done", it is set to NULL,
+    // if it is NULL, the next command will be popped and parsed from commandQueueu.
+    KIProcedure* currentKI;
 
-	// functions
-	void startControl();
-	void stopControl();
-	void clearCommands();
-	void updateControl(const tum_ardrone::filter_stateConstPtr statePtr);
+    // command parameters
+    DronePosition parameter_referenceZero;
+    double parameter_StayTime;
+    double parameter_MaxControl;
+    double parameter_InitialReachDist;
+    double parameter_StayWithinDist;
 
-	void popNextCommand(const tum_ardrone::filter_stateConstPtr statePtr);
-	void reSendInfo();
-	char buf[500];
-	ControlCommand lastSentControl;
+    // functions
+    void startControl();
+    void stopControl();
+    void clearCommands();
+    void updateControl(const tum_ardrone::filter_stateConstPtr statePtr);
+
+    void popNextCommand(const tum_ardrone::filter_stateConstPtr statePtr);
+    void reSendInfo();
+    char buf[500];
+    ControlCommand lastSentControl;
 public:
-	ControlNode();
-	~ControlNode();
+    ControlNode();
+    ~ControlNode();
 
 
-	// ROS message callbacks
-	void droneposeCb(const tum_ardrone::filter_stateConstPtr statePtr);
-	void comCb(const std_msgs::StringConstPtr str);
-	void dynConfCb(tum_ardrone::AutopilotParamsConfig &config, uint32_t level);
+    // ROS message callbacks
+    void droneposeCb(const tum_ardrone::filter_stateConstPtr statePtr);
+    void comCb(const std_msgs::StringConstPtr str);
+    void dynConfCb(tum_ardrone::AutopilotParamsConfig &config, uint32_t level); // Not used? //LINNEA
 
-	// main pose-estimation loop
-	void Loop();
+    // main pose-estimation loop
+    void Loop();
 
-	// writes a string message to "/tum_ardrone/com".
-	// is thread-safe (can be called by any thread, but may block till other calling thread finishes)
-	void publishCommand(std::string c);
+    // writes a string message to "/tum_ardrone/com".
+    // is thread-safe (can be called by any thread, but may block till other calling thread finishes)
+    void publishCommand(std::string c);
 
-	// control drone functions
-	void sendControlToDrone(ControlCommand cmd);
-	void sendLand();
-	void sendTakeoff();
-	void sendToggleState();
+    // control drone functions
+    void sendControlToDrone(ControlCommand cmd);
+    void sendLand();
+    void sendTakeoff();
+    void sendToggleState();
 
-	// controller
-	DroneController controller;
-	ControlCommand hoverCommand;
+    // controller
+    DroneController controller;
+    ControlCommand hoverCommand;
 
-	// logging stuff
-	std::ofstream* logfileControl;
-	static pthread_mutex_t logControl_CS;
-	void toogleLogging();	// switches logging on or off.
+    // logging stuff
+    std::ofstream* logfileControl;
+    static pthread_mutex_t logControl_CS;
+    void toogleLogging();	// switches logging on or off.
 
-	// other internals
-	long lastControlSentMS;
-	bool isControlling;
+    // other internals
+    long lastControlSentMS;
+    bool isControlling;
 };
 #endif /* __CONTROLNODE_H */

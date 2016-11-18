@@ -17,6 +17,9 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   roscpp
   rospy
+  genmsg
+  actionlib_msgs
+  actionlib
 )
 
 # Compile third party libs
@@ -41,6 +44,12 @@ generate_dynamic_reconfigure_options(
 ## Declare ROS messages, services and actions ##
 ################################################
 
+
+#add_action_files(DIRECTORY action 
+#FILES 
+# do_command.action
+#)
+
 ## Generate messages in the 'msg' folder
 add_message_files(FILES filter_state.msg)
 
@@ -53,10 +62,11 @@ add_service_files(
 	SetInitialReachDistance.srv
 	SetStayWithinDistance.srv
 	SetStayTime.srv
+#	SetCommand.srv
 )
 
 ## Generate added messages 
-generate_messages(DEPENDENCIES std_msgs)
+generate_messages(DEPENDENCIES std_msgs actionlib_msgs)
 
 ###################################
 ## catkin specific configuration ##
@@ -124,6 +134,7 @@ set(STATEESTIMATION_HEADER_FILES
   src/stateestimation/PTAM/TrackerData.h
   src/stateestimation/PTAM/Tracker.h
   src/stateestimation/PTAM/VideoSource.h
+  
 )
 
 # set required libs and headers
@@ -144,7 +155,7 @@ add_definitions(-DKF_REPROJ)
 add_executable(drone_stateestimation ${STATEESTIMATION_SOURCE_FILES} ${STATEESTIMATION_HEADER_FILES})
 set_target_properties(drone_stateestimation PROPERTIES COMPILE_FLAGS "-D_LINUX -D_REENTRANT -Wall  -O3 -march=nocona -msse3") 
 target_link_libraries(drone_stateestimation ${PTAM_LIBRARIES} ${catkin_LIBRARIES})
-add_dependencies(drone_stateestimation thirdparty ${PROJECT_NAME}_gencpp ${PROJECT_NAME}_gencfg)
+add_dependencies(drone_stateestimation thirdparty ${PROJECT_NAME}_gencpp ${PROJECT_NAME}_gencfg tum_ardrone_gencpp drone_stateestimation_gencpp)
 
 # ------------------------- autopilot & KI -----------------------------------------
 # set header ans source files
@@ -207,5 +218,3 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(drone_gui ${GUI_SOURCE_FILES} ${GUI_RESOURCE_FILES_CPP} ${GUI_UI_FILES_HPP} ${GUI_HEADER_FILES_HPP})
 target_link_libraries(drone_gui ${QT_LIBRARIES} cvd ${catkin_LIBRARIES})
 add_dependencies(drone_gui thirdparty ${PROJECT_NAME}_gencpp ${PROJECT_NAME}_gencfg)
-
-
