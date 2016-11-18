@@ -38,16 +38,15 @@
 #include "tum_ardrone/SetStayTime.h"
 #include "std_srvs/Empty.h"
 
-#include <actionlib/server/simple_action_server.h>  // LINNEA
-#include <drone/DoCommandAction.h>           // LINNEA
+#include <actionlib/server/simple_action_server.h> 
+#include <drone/DoCommandAction.h>                  
+#include <drone/DoPositionCommandAction.h>          
 
 
 class DroneKalmanFilter;
 class MapView;
 class PTAMWrapper;
 class KIProcedure;
-
-typedef actionlib::SimpleActionServer<drone::DoCommandAction> Server; // LINNEA
 
 
 struct ControlNode
@@ -64,9 +63,19 @@ private:
 
     ros::NodeHandle nh_;
     static pthread_mutex_t tum_ardrone_CS;
-    Server drone_command_; //LINNEA
-    void execute(const drone::DoCommandGoalConstPtr& goal); // LINNEA
-    bool cmd_success; // unique for every new command being called.
+
+    // action services
+    typedef actionlib::SimpleActionServer<drone::DoCommandAction> CommandServer; 
+    typedef actionlib::SimpleActionServer<drone::DoPositionCommandAction> PositionCommandServer; 
+ 
+    //Server drone_command_; //LINNEA
+    CommandServer command_server_;
+    PositionCommandServer position_command_server_;
+
+    void execute(const drone::DoCommandGoalConstPtr& goal);
+    void executePosGoal(const drone::DoPositionCommandGoalConstPtr& goal); 
+    void executeGoal(const drone::DoCommandGoalConstPtr& goal); 
+    bool cmd_success; 
 
     // parameters
     int minPublishFreq;

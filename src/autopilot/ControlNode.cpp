@@ -43,10 +43,15 @@ pthread_mutex_t ControlNode::logControl_CS = PTHREAD_MUTEX_INITIALIZER;
 
 ControlNode::ControlNode()
     :
-    drone_command_(nh_, "drone_command", boost::bind(&ControlNode::execute, this, _1), false),
+    //drone_command_(nh_, "drone_command", boost::bind(&ControlNode::execute, this, _1), false),
+    command_server_(nh_, "drone_autopilot/empty_command", boost::bind(&ControlNode::executeGoal, this, _1), false),
+    position_command_server_(nh_, "drone_autopilot/position_command", boost::bind(&ControlNode::executePosGoal, this, _1), false),
     cmd_success(false)
 {
-    drone_command_.start();
+    // Action servers
+    //drone_command_.start();
+    position_command_server_.start();
+    command_server_.start();
     control_channel = nh_.resolveName("cmd_vel");
     dronepose_channel = nh_.resolveName("ardrone/predictedPose");
     command_channel = nh_.resolveName("tum_ardrone/com");
@@ -112,12 +117,65 @@ ControlNode::~ControlNode()
 
 }
 
+void ControlNode::executePosGoal(const drone::DoPositionCommandGoalConstPtr& goal)
+{
+    drone::DoPositionCommandFeedback feedback_;
+    drone::DoPositionCommandResult result_;
+    ROS_INFO("Executing command number %i", goal->command_id);
+    switch(goal->command_id)
+    {
+    case 1:
+    {
+	// go to
+	ROS_INFO("CMD: Go to: (%f, %f, %f)", goal->x, goal->y, goal->z);
+	currentKI = new KIFlyTo(
+	    DronePosition(
+		TooN::makeVector(goal->x, goal->y , goal->z) + parameter_referenceZero.pos,
+		goal->yaw + parameter_referenceZero.yaw),
+	    parameter_StayTime,
+	    parameter_MaxControl,
+	    parameter_InitialReachDist,
+	    parameter_StayWithinDist
+	    );
+	currentKI->setPointers(this,&controller);
+	break;
+    }
+    case 2:
+    {
+	// move by
+	ROS_INFO("CMD: Move by: (%f, %f, %f)", goal->x, goal->y , goal->z);
+	currentKI = new KIFlyTo(
+	    DronePosition(
+		TooN::makeVector(goal->x, goal->y , goal->z) + controller.getCurrentTarget().pos,
+		goal->yaw + controller.getCurrentTarget().yaw),
+	    parameter_StayTime,
+	    parameter_MaxControl,
+	    parameter_InitialReachDist,
+	    parameter_StayWithinDist
+	    );
+	currentKI->setPointers(this,&controller);
+	break;
+    }
+    }
 
-void ControlNode::execute(const drone::DoCommandGoalConstPtr& goal)
+    while (cmd_success == false)
+    {
+	ros::Duration(0.1).sleep();
+    }
+    delete currentKI;
+    currentKI = NULL;
+    result_.succeded = true;
+    position_command_server_.setSucceeded(result_);
+    cmd_success = false;
+    return;
+}
+
+
+void ControlNode::executeGoal(const drone::DoCommandGoalConstPtr& goal)
 {
     drone::DoCommandFeedback feedback_;
     drone::DoCommandResult result_;
-    ROS_INFO("Executing command number %i", goal->command_id);  // is only called on the first time? 
+    ROS_INFO("Executing command number %i", goal->command_id);
     switch(goal->command_id)
     {
     case 0: 
@@ -162,56 +220,9 @@ void ControlNode::execute(const drone::DoCommandGoalConstPtr& goal)
 	sendControlToDrone(hoverCommand);
 	break;
     }
-    case 6:
-    {
-	// go to
-	ROS_INFO("CMD: Go to: (%f, %f, %f)", goal->p1, goal->p2, goal->p3);
-	currentKI = new KIFlyTo(
-	    DronePosition(
-		TooN::makeVector( goal->p1, goal->p2 , goal->p3) + parameter_referenceZero.pos,
-	         goal->p4 + parameter_referenceZero.yaw),
-	    parameter_StayTime,
-	    parameter_MaxControl,
-	    parameter_InitialReachDist,
-	    parameter_StayWithinDist
-	    );
-	currentKI->setPointers(this,&controller);
-
-	while (cmd_success == false)
-	{
-	    ros::Duration(0.1).sleep();
-	}
-	delete currentKI;
-	currentKI = NULL;
-	break;
     }
-    case 7:
-    {
-	// move by
-	ROS_INFO("CMD: Move by: (%f, %f, %f)", goal->p1, goal->p2, goal->p3);
-	currentKI = new KIFlyTo(
-	    DronePosition(
-		TooN::makeVector( goal->p1, goal->p2 , goal->p3) + controller.getCurrentTarget().pos,
-	         goal->p4 + controller.getCurrentTarget().yaw),
-	    parameter_StayTime,
-	    parameter_MaxControl,
-	    parameter_InitialReachDist,
-	    parameter_StayWithinDist
-	    );
-	currentKI->setPointers(this,&controller);
-	while (cmd_success == false)
-	{
-	    ros::Duration(0.1).sleep();
-	}
-	delete currentKI;
-	currentKI = NULL;
-	break;
-    }
-    }
-    result_.succeded = true;
-    drone_command_.setSucceeded(result_);
+    command_server_.setSucceeded(result_);
     cmd_success = false;
-    return;
 }
     
 
