@@ -117,10 +117,10 @@ ControlNode::~ControlNode()
 
 }
 
-void ControlNode::executePosGoal(const drone::DoPositionCommandGoalConstPtr& goal)
+void ControlNode::executePosGoal(const tum_ardrone::DoPositionCommandGoalConstPtr& goal)
 {
-    drone::DoPositionCommandFeedback feedback_;
-    drone::DoPositionCommandResult result_;
+    tum_ardrone::DoPositionCommandFeedback feedback_;
+    tum_ardrone::DoPositionCommandResult result_;
     ROS_INFO("Executing command number %i", goal->command_id);
     switch(goal->command_id)
     {
@@ -171,10 +171,10 @@ void ControlNode::executePosGoal(const drone::DoPositionCommandGoalConstPtr& goa
 }
 
 
-void ControlNode::executeGoal(const drone::DoCommandGoalConstPtr& goal)
+void ControlNode::executeGoal(const tum_ardrone::DoCommandGoalConstPtr& goal)
 {
-    drone::DoCommandFeedback feedback_;
-    drone::DoCommandResult result_;
+    tum_ardrone::DoCommandFeedback feedback_;
+    tum_ardrone::DoCommandResult result_;
     ROS_INFO("Executing command number %i", goal->command_id);
     switch(goal->command_id)
     {

@@ -44,11 +44,11 @@ generate_dynamic_reconfigure_options(
 ## Declare ROS messages, services and actions ##
 ################################################
 
-
-#add_action_files(DIRECTORY action 
-#FILES 
-# do_command.action
-#)
+add_action_files(DIRECTORY action 
+  FILES 
+  DoCommand.action
+  DoPositionCommand.action
+)
 
 ## Generate messages in the 'msg' folder
 add_message_files(FILES filter_state.msg)

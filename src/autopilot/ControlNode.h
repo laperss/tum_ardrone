@@ -39,8 +39,8 @@
 #include "std_srvs/Empty.h"
 
 #include <actionlib/server/simple_action_server.h> 
-#include <drone/DoCommandAction.h>                  
-#include <drone/DoPositionCommandAction.h>          
+#include <tum_ardrone/DoCommandAction.h>                  
+#include <tum_ardrone/DoPositionCommandAction.h>          
 
 
 class DroneKalmanFilter;
@@ -65,16 +65,16 @@ private:
     static pthread_mutex_t tum_ardrone_CS;
 
     // action services
-    typedef actionlib::SimpleActionServer<drone::DoCommandAction> CommandServer; 
-    typedef actionlib::SimpleActionServer<drone::DoPositionCommandAction> PositionCommandServer; 
+    typedef actionlib::SimpleActionServer<tum_ardrone::DoCommandAction> CommandServer; 
+    typedef actionlib::SimpleActionServer<tum_ardrone::DoPositionCommandAction> PositionCommandServer; 
  
     //Server drone_command_; //LINNEA
     CommandServer command_server_;
     PositionCommandServer position_command_server_;
 
-    void execute(const drone::DoCommandGoalConstPtr& goal);
-    void executePosGoal(const drone::DoPositionCommandGoalConstPtr& goal); 
-    void executeGoal(const drone::DoCommandGoalConstPtr& goal); 
+    void execute(const tum_ardrone::DoCommandGoalConstPtr& goal);
+    void executePosGoal(const tum_ardrone::DoPositionCommandGoalConstPtr& goal); 
+    void executeGoal(const tum_ardrone::DoCommandGoalConstPtr& goal); 
     bool cmd_success; 
 
     // parameters
