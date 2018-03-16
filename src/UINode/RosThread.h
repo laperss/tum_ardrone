@@ -28,7 +28,9 @@
 #include "std_msgs/String.h"
 #include "geometry_msgs/Twist.h"
 #include "ardrone_autonomy/Navdata.h"
+#ifndef Q_MOC_RUN
 #include "ros/ros.h"
+#endif
 #include "sensor_msgs/Joy.h"
 #include "std_srvs/Empty.h"
 #include "std_msgs/Empty.h"
